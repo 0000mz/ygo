@@ -1,0 +1,2 @@
+colored==1.4.4
+absl-py==1.4.0
