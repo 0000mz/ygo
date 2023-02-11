@@ -6,7 +6,7 @@ rm main.spec > /dev/null
 
 pip install -r requirements.txt
 pyinstaller main.py
-cp dist/main/main .
+cp dist/main/main ygo
 
 rm -rf dist > /dev/null
 rm -rf build > /dev/null
