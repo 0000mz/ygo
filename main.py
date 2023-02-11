@@ -11,6 +11,7 @@ import ydk
 import shutil
 import toml
 from sql import sql_path
+import masterduel
 
 # TODO: Allow saving deck and filtering by deck.
 # TODO: Add color highlighting of the specific word that the user queried for.
@@ -49,6 +50,15 @@ flags.DEFINE_string(
     """Use in conjunction with --import_deck. Specify the name to save
   the deck as.
   """,
+)
+
+flags.DEFINE_string(
+    "import_mdm",
+    "",
+    """Import a deck from masterduel meta by deck name.
+NOTE: The name of the deck from MasterDuelMeta must be the exact
+case sensitivity, otherwise the deck will not be found.    
+""",
 )
 
 # Return the first word in the string
@@ -276,6 +286,33 @@ def save_app_cfg(cfg):
     return False
 
 
+def import_deck_mdm(mdm_deck_name: str):
+    deck = masterduel.masterduel_import(mdm_deck_name)
+    if deck is None:
+        print("Deck not found.", file=sys.stderr)
+        sys.exit(1)
+
+    app = AppDataPaths("ygo")
+    save_location = os.path.join(app.app_data_path, mdm_deck_name + ".ydk")
+    i = 1
+    while os.path.exists(save_location):
+        save_location = os.path.join(
+            app.app_data_path, f"{mdm_deck_name}_{i}.ydk"
+        )
+        i += 1
+    assert deck.ExportToYDK(save_location), "Saving export failed."
+    cfg = load_app_cfg()
+    assert cfg is not None
+    if "decks" not in cfg:
+        cfg["decks"] = {}
+
+    # NOTE: If there is a name collision with previously saved decks, they will
+    # be overwritten.
+    # TODO: Resolve name colissions.
+    cfg["decks"][mdm_deck_name] = save_location
+    assert save_app_cfg(cfg)
+
+
 def import_deck(deck_file: str, deck_name: str):
     if not os.path.exists(deck_file):
         print("File not found: ", deck_file, file=sys.stderr)
@@ -322,6 +359,8 @@ def main(argv):
         return list_decks()
     elif len(FLAGS.import_deck) > 0:
         return import_deck(FLAGS.import_deck, FLAGS.deck_name)
+    elif len(FLAGS.import_mdm) > 0:
+        return import_deck_mdm(FLAGS.import_mdm)
 
 
 if __name__ == "__main__":

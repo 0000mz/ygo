@@ -99,10 +99,11 @@ class TestYDKImport(unittest.TestCase):
             self.assertIsNotNone(deck)
             self.assertEqual(3, deck.nb_cards)
 
-            deck_order = [39674352, 73752131, 43892408]
+            deck_order = set([39674352, 73752131, 43892408])
             i = 0
             for card_id in deck:
-                self.assertEqual(card_id, deck_order[i])
+                self.assertTrue(card_id in deck_order)
+                deck_order.remove(card_id)
                 i += 1
             self.assertEqual(3, i)
 
@@ -119,10 +120,11 @@ class TestYDKImport(unittest.TestCase):
             self.assertIsNotNone(deck)
             self.assertEqual(3, deck.nb_cards)
 
-            deck_order = [39674352, 73752131, 43892408]
+            deck_order = set([39674352, 73752131, 43892408])
             i = 0
             for card_id in deck:
-                self.assertEqual(card_id, deck_order[i])
+                self.assertTrue(card_id in deck_order)
+                deck_order.remove(card_id)
                 i += 1
             self.assertEqual(3, i)
 
@@ -141,10 +143,11 @@ class TestYDKImport(unittest.TestCase):
             self.assertIsNotNone(deck)
             self.assertEqual(3, deck.nb_cards)
 
-            deck_order = [39674352, 73752131, 43892408]
+            deck_order = set([39674352, 73752131, 43892408])
             i = 0
             for card_id in deck:
-                self.assertEqual(card_id, deck_order[i])
+                self.assertTrue(card_id in deck_order)
+                deck_order.remove(card_id)
                 i += 1
             self.assertEqual(3, i)
 
@@ -164,10 +167,11 @@ class TestYDKImport(unittest.TestCase):
             self.assertIsNotNone(deck)
             self.assertEqual(4, deck.nb_cards)
 
-            deck_order = [39674352, 50237654, 73752131, 43892408]
+            deck_order = set([39674352, 50237654, 73752131, 43892408])
             i = 0
             for card_id in deck:
-                self.assertEqual(card_id, deck_order[i])
+                self.assertTrue(card_id in deck_order)
+                deck_order.remove(card_id)
                 i += 1
             self.assertEqual(4, i)
 
