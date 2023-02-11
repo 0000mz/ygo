@@ -22,14 +22,18 @@ flags.DEFINE_string(
     "query",
     "",
     """
-Information to search about the card.
+Information to search about the card. Use --use_deck to search only
+cards from that deck.
 
 Filter Prefixes:
   - n: Filter by card name.
-    e.g "n:Max" will get cards that have "Max" in the name.
   - d: Filter by card description.
+  Example Queries: 
+    --query=n:dark         # Search all cards with dark in the name.
+    --query=d:graveyard    # Search all cards with graveyard in the description.
 """,
 )
+flags.DEFINE_string("use_deck", "", "A deck to pin a query to.")
 
 flags.DEFINE_boolean("list_decks", False, "List all saved decks.")
 
@@ -110,7 +114,24 @@ def get_filter_params(filter: str):
     return filter_params
 
 
-def query_cards(query):
+# Get all cards from a deck
+def get_deck_cards(deck_name):
+    if len(deck_name) == 0:
+        return None
+    cfg = load_app_cfg()
+    if "decks" not in cfg or len(cfg["decks"]) == 0:
+        return None
+    if deck_name not in cfg["decks"]:
+        return None
+
+    deck_path = cfg["decks"][deck_name]
+    assert os.path.exists(deck_path)
+    deck = ydk.ydk_import(deck_path)
+    assert deck is not None
+    return deck
+
+
+def query_cards(query, deck_name):
 
     if query is None or len(query) == 0:
         print("No queries.", file=sys.stderr)
@@ -131,6 +152,18 @@ def query_cards(query):
     dbname = "YuGiOhDB"
     sql_query = "SELECT * from {} where ".format(dbname)
 
+    deck_cards = get_deck_cards(deck_name)
+    if deck_cards is not None:
+        deck_subfilter_query = ""
+        i = 0
+        for card_id in deck_cards:
+            deck_subfilter_query += f"id={card_id} "
+            if i < deck_cards.nb_cards - 1:
+                deck_subfilter_query += "OR "
+            i += 1
+        if i > 0:
+            sql_query += f"({deck_subfilter_query}) AND "
+
     for i in range(len(query_parts)):
         f = query_parts[i]
         assert len(f) == 2
@@ -140,31 +173,32 @@ def query_cards(query):
         if i < len(query_parts) - 1:
             sql_query += " AND "
 
-    print(sql_query)
-    con = sqlite3.connect("sql.db")
-    cur = con.cursor()
-    columns = {
-        "CardName": 0,
-        "id": 1,
-        "CardType": 2,
-        "Attribute": 3,
-        "Property": 4,
-        "Types": 5,
-        "Level": 6,
-        "ATK": 7,
-        "DEF": 8,
-        "Link": 9,
-        "PendulumScale": 10,
-        "Description": 11,
-    }
-    for res in cur.execute(sql_query):
-        print(
-            f"""
-{color("Name: ", "blue")} {res[columns["CardName"]]}
-{color("Type(s): ", "blue")} {res[columns["Types"]]}
-{color("Desc: ", "blue")} {res[columns["Description"]]}
-        """
-        )
+    with sqlite3.connect("sql.db") as con:
+      cur = con.cursor()
+      columns = {
+          "CardName": 0,
+          "id": 1,
+          "CardType": 2,
+          "Attribute": 3,
+          "Property": 4,
+          "Types": 5,
+          "Level": 6,
+          "ATK": 7,
+          "DEF": 8,
+          "Link": 9,
+          "PendulumScale": 10,
+          "Description": 11,
+      }
+
+      # print("Query: ", sql_query)
+      for res in cur.execute(sql_query.strip()):
+          print(
+              f"""
+  {color("Name: ", "blue")} {res[columns["CardName"]]}
+  {color("Type(s): ", "blue")} {res[columns["Types"]]}
+  {color("Desc: ", "blue")} {res[columns["Description"]]}
+          """
+          )
 
 
 def list_decks():
@@ -257,7 +291,7 @@ def import_deck(deck_file: str, deck_name: str):
 
 def main(argv):
     if len(FLAGS.query) > 0:
-        return query_cards(FLAGS.query)
+        return query_cards(FLAGS.query, FLAGS.use_deck)
     elif FLAGS.list_decks:
         return list_decks()
     elif len(FLAGS.import_deck) > 0:
