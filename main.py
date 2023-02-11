@@ -1,8 +1,13 @@
 import sqlite3
 import sys
+import os
 from absl import app
 from absl import flags
 from colored import fg, bg, attr
+from appdata import AppDataPaths
+import ydk
+import shutil
+import toml
 
 # TODO: Allow saving deck and filtering by deck.
 # TODO: Add color highlighting of the specific word that the user queried for.
@@ -24,6 +29,19 @@ Filter Prefixes:
     e.g "n:Max" will get cards that have "Max" in the name.
   - d: Filter by card description.
 """,
+)
+
+flags.DEFINE_boolean("list_decks", False, "List all saved decks.")
+
+flags.DEFINE_string(
+    "import_deck", "", "Import a deck from supported formats: ydk"
+)
+flags.DEFINE_string(
+    "deck_name",
+    "",
+    """Use in conjunction with --import_deck. Specify the name to save
+  the deck as.
+  """,
 )
 
 # Return the first word in the string
@@ -92,8 +110,8 @@ def get_filter_params(filter: str):
     return filter_params
 
 
-def main(argv):
-    query = FLAGS.query
+def query_cards(query):
+
     if query is None or len(query) == 0:
         print("No queries.", file=sys.stderr)
         sys.exit(1)
@@ -147,6 +165,103 @@ def main(argv):
 {color("Desc: ", "blue")} {res[columns["Description"]]}
         """
         )
+
+
+def list_decks():
+    app = AppDataPaths("ygo")
+    if not os.path.exists(app.app_data_path):
+        print(
+            "No saved decks. Use --import_deck to import ydk deck.",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+    cfg = load_app_cfg()
+    if "decks" not in cfg or len(cfg["decks"]) == 0:
+        print("No decks saved. Use --import_deck to import a ydk deck.")
+        sys.exit(1)
+    print("Decks:")
+    for deck_name, _ in cfg["decks"].items():
+        print("  - ", deck_name)
+
+
+def cfg_file_location():
+    app = AppDataPaths("ygo")
+    return os.path.join(app.app_data_path, "config.toml")
+
+
+# Load the application configutation.
+def load_app_cfg():
+    try:
+        cfgloc = cfg_file_location()
+        if not os.path.exists(cfgloc):
+            return {}
+        with open(cfgloc, "r") as f:
+            return toml.load(f)
+    except Exception as e:
+        print(e)
+        sys.exit(1)
+
+
+def save_app_cfg(cfg):
+    assert cfg is not None
+    try:
+        cfgloc = cfg_file_location()
+        print("Saving config to: ", cfgloc)
+        with open(cfgloc, "w") as f:
+            toml.dump(cfg, f)
+            return True
+    except Exception as e:
+        print("Error saving app config.", file=sys.stderr)
+        print(e)
+    return False
+
+
+def import_deck(deck_file: str, deck_name: str):
+    if not os.path.exists(deck_file):
+        print("File not found: ", deck_file, file=sys.stderr)
+        sys.exit(1)
+    if not os.path.isfile(deck_file):
+        print("Deck file is not a file: ", deck_file, file=sys.stderr)
+        sys.exit(1)
+    if len(deck_name) == 0:
+        print(
+            "No deck name provided. Use --deck_name to specify the name of the deck.",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+    deck = ydk.ydk_import(deck_file)
+    if deck is None:
+        print("Deck import failed.", file=sys.stderr)
+
+    print(f"Number of cards in deck: {deck.nb_cards}")
+    app = AppDataPaths("ygo")
+    if not os.path.exists(app.app_data_path):
+        os.mkdir(app.app_data_path)
+    assert os.path.isdir(app.app_data_path)
+
+    dst = os.path.join(app.app_data_path, "{}.ydk".format(deck_name))
+    i = 1
+    while os.path.exists(dst):
+        dst = os.path.join(app.app_data_path, "{}_{}.ydk".format(deck_name, i))
+        i += 1
+    shutil.copy(deck_file, dst)
+
+    cfg = load_app_cfg()
+    assert cfg is not None
+    if "decks" not in cfg:
+        cfg["decks"] = {}
+
+    cfg["decks"][deck_name] = dst
+    assert save_app_cfg(cfg)
+
+
+def main(argv):
+    if len(FLAGS.query) > 0:
+        return query_cards(FLAGS.query)
+    elif FLAGS.list_decks:
+        return list_decks()
+    elif len(FLAGS.import_deck) > 0:
+        return import_deck(FLAGS.import_deck, FLAGS.deck_name)
 
 
 if __name__ == "__main__":
