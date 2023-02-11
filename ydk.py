@@ -4,6 +4,7 @@ import sqlite3
 
 
 def is_known_card(card_id: int) -> bool:
+    # return True
     con = sqlite3.connect("sql.db")
     if con == None:
         return False
@@ -45,8 +46,8 @@ class Deck:
 
     # Add the card with the card_id to the deck.
     # Return true if the card is known.
-    def AddCard(self, card_id: int, deck: str) -> bool:
-        if not is_known_card(card_id):
+    def AddCard(self, card_id: int, deck: str, verify) -> bool:
+        if verify and not is_known_card(card_id):
             return False
         assert deck in self.decks
         if card_id not in self.decks[deck]:
@@ -62,7 +63,7 @@ class Deck:
 
 
 # Import a deck from a YDK file.
-def ydk_import(fname: str) -> Deck:
+def ydk_import(fname: str, verify=True) -> Deck:
     if not os.path.exists(fname) or not os.path.isfile(fname):
         print("File does not exist: ", fname, file=sys.stderr)
         return None
@@ -86,7 +87,7 @@ def ydk_import(fname: str) -> Deck:
                 continue
             try:
                 card_id = int(token)
-                if not deck.AddCard(card_id, curr_deck):
+                if not deck.AddCard(card_id, curr_deck, verify):
                     unresolved_cards.Add(card_id)
                 else:
                     nb_cards += 1

@@ -126,7 +126,7 @@ def get_deck_cards(deck_name):
 
     deck_path = cfg["decks"][deck_name]
     assert os.path.exists(deck_path)
-    deck = ydk.ydk_import(deck_path)
+    deck = ydk.ydk_import(deck_path, False)
     assert deck is not None
     return deck
 
@@ -174,31 +174,31 @@ def query_cards(query, deck_name):
             sql_query += " AND "
 
     with sqlite3.connect("sql.db") as con:
-      cur = con.cursor()
-      columns = {
-          "CardName": 0,
-          "id": 1,
-          "CardType": 2,
-          "Attribute": 3,
-          "Property": 4,
-          "Types": 5,
-          "Level": 6,
-          "ATK": 7,
-          "DEF": 8,
-          "Link": 9,
-          "PendulumScale": 10,
-          "Description": 11,
-      }
+        cur = con.cursor()
+        columns = {
+            "CardName": 0,
+            "id": 1,
+            "CardType": 2,
+            "Attribute": 3,
+            "Property": 4,
+            "Types": 5,
+            "Level": 6,
+            "ATK": 7,
+            "DEF": 8,
+            "Link": 9,
+            "PendulumScale": 10,
+            "Description": 11,
+        }
 
-      # print("Query: ", sql_query)
-      for res in cur.execute(sql_query.strip()):
-          print(
-              f"""
+        # print("Query: ", sql_query)
+        for res in cur.execute(sql_query.strip()):
+            print(
+                f"""
   {color("Name: ", "blue")} {res[columns["CardName"]]}
   {color("Type(s): ", "blue")} {res[columns["Types"]]}
   {color("Desc: ", "blue")} {res[columns["Description"]]}
           """
-          )
+            )
 
 
 def list_decks():
