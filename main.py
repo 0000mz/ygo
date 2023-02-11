@@ -1,3 +1,4 @@
+import html
 import re
 import sqlite3
 import sys
@@ -214,11 +215,13 @@ def query_cards(query, deck_name):
 
         # print("Query: ", sql_query)
         for res in cur.execute(sql_query.strip()):
+            card_name = html.unescape(res[columns["CardName"]])
+            description = html.unescape(res[columns["Description"]])
             print(
                 f"""
-  {color("Name: ", "blue")} {highlight_instances(res[columns["CardName"]], p["name"], "red")}
+  {color("Name: ", "blue")} {highlight_instances(card_name, p["name"], "red")}
   {color("Type(s): ", "blue")} {res[columns["Types"]]}
-  {color("Desc: ", "blue")} {highlight_instances(res[columns["Description"]], p["desc"], "red")}
+  {color("Desc: ", "blue")} {highlight_instances(description, p["desc"], "red")}
           """
             )
 
