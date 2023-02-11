@@ -21,7 +21,7 @@ class TestFileContent:
         os.unlink(self.filename)
 
 
-class TestYDKImportTest(unittest.TestCase):
+class TestYDKImport(unittest.TestCase):
     def test_import(self):
         contents = """#main
 39674352

@@ -96,6 +96,7 @@ def ydk_import(fname: str, verify=True) -> Deck:
 
     if nb_cards == 0:
         return None
+
     if len(unresolved_cards) > 0:
         print("Unresolved card ids:")
         for card in unresolved_cards:

@@ -1,3 +1,4 @@
+import re
 import sqlite3
 import sys
 import os
@@ -131,6 +132,27 @@ def get_deck_cards(deck_name):
     return deck
 
 
+def highlight_instances(msg: str, value: str, clr: str) -> str:
+    if value is None:
+        return msg
+    curr_i = 0
+
+    res = ""
+    while True:
+        next_pos = re.search(value, msg[curr_i:], re.IGNORECASE)
+        if next_pos == None:
+            break
+        prev_i = curr_i
+        curr_i += next_pos.end()
+        res += msg[prev_i : prev_i + next_pos.start()]  # Add non-matching word
+        res += color(
+            msg[prev_i + next_pos.start() : prev_i + next_pos.end()], clr
+        )
+
+    res += msg[curr_i:]
+    return res
+
+
 def query_cards(query, deck_name):
 
     if query is None or len(query) == 0:
@@ -194,9 +216,9 @@ def query_cards(query, deck_name):
         for res in cur.execute(sql_query.strip()):
             print(
                 f"""
-  {color("Name: ", "blue")} {res[columns["CardName"]]}
+  {color("Name: ", "blue")} {highlight_instances(res[columns["CardName"]], p["name"], "red")}
   {color("Type(s): ", "blue")} {res[columns["Types"]]}
-  {color("Desc: ", "blue")} {res[columns["Description"]]}
+  {color("Desc: ", "blue")} {highlight_instances(res[columns["Description"]], p["desc"], "red")}
           """
             )
 
@@ -267,7 +289,7 @@ def import_deck(deck_file: str, deck_name: str):
     if deck is None:
         print("Deck import failed.", file=sys.stderr)
 
-    print(f"Number of cards in deck: {deck.nb_cards}")
+    print(f"Number of unique cards in deck: {deck.nb_cards}")
     app = AppDataPaths("ygo")
     if not os.path.exists(app.app_data_path):
         os.mkdir(app.app_data_path)
