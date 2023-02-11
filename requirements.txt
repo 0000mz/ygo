@@ -1,3 +1,5 @@
 colored==1.4.4
 absl-py==1.4.0
 pyinstaller==5.7.0
+appdata==2.2.0
+toml==0.10.2
