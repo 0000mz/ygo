@@ -116,10 +116,13 @@ def main(argv):
     for i in range(len(query_parts)):
         f = query_parts[i]
         assert len(f) == 2
-        sql_query += '{} LIKE "%{}%"'.format(f[0], f[1])
+        a = f[0]
+        b = f[1]
+        sql_query += f'({a} LIKE "%{b}%")'
         if i < len(query_parts) - 1:
             sql_query += " AND "
 
+    print(sql_query)
     con = sqlite3.connect("sql.db")
     cur = con.cursor()
     columns = {
@@ -144,10 +147,6 @@ def main(argv):
 {color("Desc: ", "blue")} {res[columns["Description"]]}
         """
         )
-        break
-
-    # d = res.fetchall()
-    # print(d)
 
 
 if __name__ == "__main__":
