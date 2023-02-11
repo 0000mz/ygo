@@ -1,11 +1,12 @@
 import sys
 import os
 import sqlite3
+from sql import sql_path
 
 
 def is_known_card(card_id: int) -> bool:
     # return True
-    con = sqlite3.connect("sql.db")
+    con = sqlite3.connect(sql_path())
     if con == None:
         return False
     cur = con.cursor()

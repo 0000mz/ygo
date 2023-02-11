@@ -10,6 +10,7 @@ from appdata import AppDataPaths
 import ydk
 import shutil
 import toml
+from sql import sql_path
 
 # TODO: Allow saving deck and filtering by deck.
 # TODO: Add color highlighting of the specific word that the user queried for.
@@ -196,7 +197,7 @@ def query_cards(query, deck_name):
         if i < len(query_parts) - 1:
             sql_query += " AND "
 
-    with sqlite3.connect("sql.db") as con:
+    with sqlite3.connect(sql_path()) as con:
         cur = con.cursor()
         columns = {
             "CardName": 0,
